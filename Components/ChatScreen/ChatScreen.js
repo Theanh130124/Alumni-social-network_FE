@@ -9,6 +9,7 @@ import { CurrentUserContext } from "../../App";
 const ChatScreen = () => {
     const [mess, setMess] = useState([]);
     const [room] = useContext(RoomContext) || [{}]; 
+    const [isPolling, setIsPolling] = useState(false);
 
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,22 +28,24 @@ const ChatScreen = () => {
     }, []);
 
     // Định nghĩa lại hàm fetchMess ở ngoài useEffect
-    const fetchMess = async () => {
+    const fetchMess = async (isInitialLoad = false) => {
         if (token && room) {
             try {
-                setLoading(true);
+                if (isInitialLoad) setLoading(true); // Chỉ bật loading khi tải lần đầu
+                setIsPolling(true); // Bắt đầu Polling
                 const response = await getMessbyRoom(token, room.id);
                 if (response && response.results) {
-                    //Chỉ tải lại tn mới
-                    if (response.results.length !== mess.length){
-                    setMess(response.results);
-                    setNextPage(response.next);
+                    // Chỉ cập nhật tin nhắn mới
+                    if (response.results.length !== mess.length) {
+                        setMess(response.results);
+                        setNextPage(response.next);
                     }
                 }
             } catch (error) {
                 console.log("Error fetching messages", error);
             } finally {
-                setLoading(false);
+                if (isInitialLoad) setLoading(false); // Tắt loading khi tải lần đầu xong
+                setIsPolling(false); // Kết thúc Polling
             }
         }
     };
